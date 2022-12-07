@@ -8,19 +8,11 @@ on:
   push:
     branches:
       - main
-      - r*
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Deploy
-    needs: [ build ]
-
     steps:
       - name: Deploy package to production
         uses: appleboy/ssh-action@v0.1.5
