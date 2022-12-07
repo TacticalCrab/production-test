@@ -1,0 +1,49 @@
+name: Deploy
+
+concurrency:
+  group: prod
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+      - r*
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+
+jobs:
+  build:
+    name: Build
+    
+    steps:
+      - uses: actions/checkout@checkout
+      - name: copy file via ssh
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SSH_IP }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
+      source: "."
+      target: ".build-docker/${{ github.repository }}"
+
+  deploy:
+    name: Deploy
+    needs: [ build ]
+
+    steps:
+      - name: Deploy package to production
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.SSH_IP }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd .build-docker/${{ github.repository }}/.docker
+            docker-compose down
+            docker-compose up -d --build
